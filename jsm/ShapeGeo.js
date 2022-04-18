@@ -65,6 +65,7 @@ export default class ShapeGeo {
     }
     return inPoly;
   }
+  // 以第一个点为标准 画两个向量
   cross([p0, p1, p2]) {
     const [ax, ay, bx, by] = [
       p1.x - p0.x,

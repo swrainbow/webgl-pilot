@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>修改顶点颜色</title>
+    <link rel="icon" href="https://img.kaikeba.com/kkb_portal_icon.ico">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #canvas {
+            background-color: antiquewhite;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <!-- 顶点着色器 -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+    attribute vec4 a_Position;
+    void main(){
+        gl_Position=a_Position;
+        gl_PointSize=10.0;
+    }
+  </script>
+    <!-- 片元着色器 -->
+    <!-- 片元着色器 -->
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        void main(){
+            gl_FragColor=vec4(1,1,0,1);
+        }
+      </script>
+    <script type="module">
+        import { initShaders, ScaleLinear } from "../jsm/Utils.js";
+        import Poly from '../jsm/Poly.js'
+        import ShapeGeo from '../jsm/ShapeGeo.js'
+
+        const canvas = document.querySelector("#canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 获取着色器文本
+        const vsSource = document.querySelector("#vertexShader").innerText;
+        const fsSource = document.querySelector("#fragmentShader").innerText;
+
+        //三维画笔
+        const gl = canvas.getContext("webgl");
+
+        //初始化着色器
+        initShaders(gl, vsSource, fsSource);
+
+
+        //声明颜色 rgba
+        gl.clearColor(0, 0, 0, 1);
+        //刷底色
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        const pathData = [
+            0, 0,
+            0, 600,
+            600, 600,
+            600, 200,
+            200, 200,
+            200, 400,
+            300, 400,
+            300, 300,
+            500, 300,
+            500, 500,
+            100, 500,
+            100, 100,
+            600, 100,
+            600, 0,
+        ]
+
+        const ratio = canvas.width / canvas.height;
+        const rectH = 1.0;
+        const rectW = rectH / ratio;
+
+        const [halfRectW, halfRectH] = [rectW / 2, rectH /2];
+        const minX = -halfRectW;
+        const minY = -halfRectH;
+        const maxX = halfRectW;
+        const maxY = halfRectH;
+
+        const rect = new Poly({
+            gl,
+            vertices: [
+                minX, maxY,
+                minX, minY,
+                maxX, minY,
+                maxX, maxY,
+            ]
+        });
+        // rect.draw();
+
+        const scaleX = ScaleLinear(0, minX, 600, maxX);
+        const scaleY = ScaleLinear(0, maxY, 600, minY)
+        const glData = [];
+        for(let i=0; i<pathData.length; i+=2) {
+            glData.push(scaleX(pathData[i]),scaleY(pathData[i+1]));
+        }
+
+        const path = new Poly({
+            gl,
+            vertices:glData,
+            types: ["POINTS", "LINE_LOOP"],
+        })
+
+        // path.draw();
+
+        const ShapeGeo1 = new ShapeGeo(glData)
+        const face = new Poly({
+            gl,
+            vertices:ShapeGeo1.vertices,
+            types: ["TRIANGLES"]
+        })
+
+        face.draw();
+
+  
+        // canvas.addEventListener('mousedown', (event)=>{
+        //     const {x, y} = getMousePosInWebgl(event, canvas)
+        //     poly.addVertice(x,y)
+        //     gl.clear(gl.COLOR_BUFFER_BIT)
+        //     poly.draw()
+        // })
+        // poly.draw()
+    </script>
+</body>
+
+</html>
