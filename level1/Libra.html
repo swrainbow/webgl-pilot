@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>修改顶点颜色</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #canvas {
+            background: url('./images/sky.jpg');
+            background-size: cover;
+            background-position: right bottom;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <!-- 顶点着色器 -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+        attribute vec4 a_Attr;
+        varying float v_Alpha;
+        void main(){
+            gl_Position=vec4(a_Attr.x,a_Attr.y,0.0,1.0);
+            gl_PointSize=a_Attr.z;
+            v_Alpha=a_Attr.w;
+        }
+    </script>
+    <!-- 片元着色器 -->
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying float v_Alpha;
+        uniform bool u_IsPOINTS;
+      void main(){
+        float dist=distance(gl_PointCoord,vec2(0.5,0.5));
+        if(u_IsPOINTS) {
+            if(dist<0.5){
+                gl_FragColor=vec4(0.87,0.91,1,v_Alpha);
+            }else{
+                discard;
+            }
+        }else{
+            gl_FragColor=vec4(0.87,0.91,1,v_Alpha);
+        }
+      }
+  </script>
+    <script type="module">
+        import { initShaders, getMousePosInWebgl, glToCssPos } from "../jsm/Utils.js";
+        import Compose from "../jsm/Compose.js";
+        import Track from "../jsm/Track.js";
+        import Sky from "../jsm/Sky.js";
+        import Poly from "../jsm/Poly.js";
+
+        const canvas = document.querySelector("#canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 获取着色器文本
+        const vsSource = document.querySelector("#vertexShader").innerText;
+        const fsSource = document.querySelector("#fragmentShader").innerText;
+
+        //三维画笔
+        const gl = canvas.getContext("webgl");
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        //初始化着色器
+        initShaders(gl, vsSource, fsSource);
+
+        // //声明颜色 rgba
+        // gl.clearColor(0, 0, 0, 0);
+        // //刷底色
+        // gl.clear(gl.COLOR_BUFFER_BIT);
+
+        //设置attribute 变量
+        // a_Position=vec4(1,0,0,1)
+        gl.clearColor(0, 0, 0, 0)
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        // render();
+        const sky = new Sky(gl)
+        console.log('sky', sky)
+        const compose = new Compose()
+
+        let poly = null
+        let point = null
+
+        canvas.oncontextmenu = function () {
+            return false;
+        }
+        canvas.addEventListener('mousedown', (event) => {
+            if (event.button === 2) {
+                popVertice()
+            } else {
+                const { x, y } = getMousePosInWebgl(event, canvas)
+                if (poly) {
+                    addVertice(x, y)
+                } else {
+                    crtPoly(x, y)
+                }
+            }
+            render()
+        })
+        canvas.addEventListener('mousemove', (event) => {
+            const { x, y } = getMousePosInWebgl(event, canvas)
+            point = hoverPoint(x, y)
+            canvas.style.cursor = point ? 'pointer' : 'default'
+            if (poly) {
+                const obj = poly.geoData[poly.geoData.length - 1];
+                obj.x = x;
+                obj.y = y
+            }
+        })
+
+
+
+        function hoverPoint(mx, my) {
+            for (let { geoData } of sky.children) {
+                for (let obj of geoData) {
+                    if (poly && obj === poly.geoData[poly.geoData.length - 1]) {
+                        continue
+                    }
+                    const delta = {
+                        x: mx - obj.x,
+                        y: my - obj.y
+                    }
+                    const { x, y } = glToCssPos(delta, canvas)
+                    const dist = x * x + y * y;
+                    if (dist < 100) {
+                        return obj
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        !(function ani() {
+            compose.update(new Date());
+            sky.updateVertices(['x', 'y', 'pointSize', 'alpha'])
+            render();
+            requestAnimationFrame(ani)
+        })()
+
+        function addVertice(x, y) {
+            const { geoData } = poly;
+            if (point) {
+                geoData[geoData.length - 1] = point
+            }
+            let obj = { x, y, pointSize: random(), alpha: 1 }
+            geoData.push(obj)
+            crtTrack(obj)
+        }
+
+        function crtPoly(x, y) {
+            const o1 = point ? point : { x, y, pointSize: random(), alpha: 1 };
+            const o2 = { x, y, pointSize: random(), alpha: 1 }
+            poly = new Poly({
+                size: 4,
+                attrName: 'a_Attr',
+                geoData: [o1, o2],
+                types: ['POINTS', 'LINE_STRIP'],
+                circleDot:true,
+            })
+            sky.add(poly)
+            crtTrack(o1);
+            crtTrack(o2)
+        }
+
+        function crtTrack(obj) {
+            const { pointSize } = obj;
+            const track = new Track(obj);
+            track.start = new Date();
+            track.timeLen = 2000;
+            track.loop = true;
+            track.keyMap = new Map([
+                [
+                    "pointSize",
+                    [
+                        [500, pointSize],
+                        [1000, 0],
+                        [1500, pointSize],
+                    ]
+                ],
+                [
+                    "alpha",
+                    [
+                        [500, 1],
+                        [1000, 0],
+                        [1500, 1],
+                    ]
+                ]
+            ])
+            compose.add(track)
+        }
+
+        function random() {
+            return Math.random() * 8 + 3
+        }
+
+        function popVertice() {
+            poly.geoData.pop();
+            compose.children.pop()
+            poly = null
+        }
+        // poly.draw()
+        function render() {
+            gl.clear(gl.COLOR_BUFFER_BIT)
+            sky.draw()
+        }
+
+    </script>
+</body>
+
+</html>
