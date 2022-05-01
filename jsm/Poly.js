@@ -2,13 +2,14 @@ const defAttr=()=>({
   gl:null,
   vertices:[],
   geoData:[],
-  size:2,
+  size:3,
   attrName:'a_Position',
   uniName:'u_IsPOINTS',
   count:0,
   types: ['POINTS'],
   circleDot: false,
-  u_IsPOINTS:null
+  u_IsPOINTS:null,
+  uniforms: {}
 })
 export default class Poly{
   constructor(attr){
@@ -33,6 +34,20 @@ export default class Poly{
     //如果是圆点，就获取一下uniform 变量
     if (circleDot) {
       this.u_IsPOINTS=gl.getUniformLocation(gl.program, 'u_IsPOINTS')
+    }
+    this.updateUniform();
+  }
+
+  updateUniform() {
+    const { gl, uniforms} = this
+    for(let [key, val] of Object.entries(uniforms) ){
+      const { type, value } = val
+      const u = gl.getUniformLocation(gl.program, key);
+      if(type.includes('Matrix')) {
+        gl[type](u, false, value)
+      }else {
+        gl[type](u, value)
+      }
     }
   }
 
