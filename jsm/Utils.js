@@ -69,5 +69,14 @@ function ScaleLinear(ax, ay, bx, by) {
 }
 
 
+    /* 正弦函数 */
+    function SinFn(a, Omega, phi) {
+      return function (x) {
+        return a * Math.sin(Omega * x + phi);
+      }
+    }
 
-export { initShaders, getMousePosInWebgl, glToCssPos, ScaleLinear };
+
+
+
+export { SinFn, initShaders, getMousePosInWebgl, glToCssPos, ScaleLinear };

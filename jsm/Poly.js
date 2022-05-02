@@ -9,7 +9,8 @@ const defAttr=()=>({
   types: ['POINTS'],
   circleDot: false,
   u_IsPOINTS:null,
-  uniforms: {}
+  uniforms: {},
+  maps: {}
 })
 export default class Poly{
   constructor(attr){
