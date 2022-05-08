@@ -76,7 +76,13 @@ function ScaleLinear(ax, ay, bx, by) {
       }
     }
 
+function imgPromise(img) {
+  return new Promise((resolve)=>{
+    img.onload=function(){
+      resolve(img)
+    }
+  })
+}
 
 
-
-export { SinFn, initShaders, getMousePosInWebgl, glToCssPos, ScaleLinear };
+export { SinFn, initShaders, getMousePosInWebgl, glToCssPos, ScaleLinear ,imgPromise};
