@@ -1,3 +1,4 @@
+
 export default class Track {
   constructor(target) {
     this.target = target;
@@ -6,11 +7,16 @@ export default class Track {
     this.timeLen = 5;
     this.loop = false;
     this.keyMap = new Map();
+    this.onEnd = () => { }
+    this.prevTime=0
   }
   update(t) {
-    const { keyMap, timeLen, target, loop, start } = this;
-    //本地时间
+    const { keyMap, timeLen, target, loop, start,prevTime } = this;
     let time = t - start;
+    if (timeLen >= prevTime && timeLen < time) {
+      this.onEnd()
+    }
+    this.prevTime=time
     if (loop) {
       time = time % timeLen;
     }
