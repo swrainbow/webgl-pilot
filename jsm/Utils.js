@@ -55,6 +55,14 @@ function glToCssPos({ x, y }, { width, height }) {
   }
 }
 
+function glToCanvasPos({ x, y }, { width, height }) {
+  const [halfWidth, halfHeight] = [width / 2, height / 2];
+  return {
+    x: halfWidth + x * halfWidth,
+    y: halfHeight - y * halfHeight
+  }
+}
+
 //线性比例尺
 function ScaleLinear(ax, ay, bx, by) {
   const delta = {
@@ -68,21 +76,61 @@ function ScaleLinear(ax, ay, bx, by) {
   };
 }
 
-
-    /* 正弦函数 */
-    function SinFn(a, Omega, phi) {
-      return function (x) {
-        return a * Math.sin(Omega * x + phi);
-      }
-    }
-
-function imgPromise(img) {
-  return new Promise((resolve)=>{
-    img.onload=function(){
-      resolve(img)
-    }
-  })
+/* 正弦函数 */
+function SinFn(a, Omega, phi) {
+  return function (x) {
+    return a * Math.sin(Omega * x + phi);
+  }
 }
 
+/* GetIndexInGrid 
+  在由一维数组建立的栅格矩阵中，基于行列获取元素的索引位置 
+*/
+function GetIndexInGrid(w, size) {
+  return function (x, y) {
+    return (y * w + x) * size
+  }
+}
 
-export { SinFn, initShaders, getMousePosInWebgl, glToCssPos, ScaleLinear ,imgPromise};
+/* 对Image 加载事件的封装 */
+function imgPromise(img){
+  return new Promise((resolve)=>{
+    img.onload=function(){
+        resolve(img);
+    }
+  });
+}
+
+/* 解析渐变节点 */
+function parseColorStops(source) {
+    const stops = new Array(16).fill(-1);
+    source.forEach(({ color, stop }, stopInd) => {
+        let rgb = '';
+        let ar = '';
+        color.forEach((ele, ind) => {
+          //1 1001 '1001' '001'
+          const str = (ele + 1000).toString().slice(1);
+          if (ind < 3) {
+              rgb += str;
+          } else {
+              ar += str;
+          }
+        })
+        ar += (Math.round(stop * 255) + 1000).toString().slice(1);
+        stops[stopInd * 2] = rgb;
+        stops[stopInd * 2 + 1] = ar;
+    })
+    return stops;
+}
+
+export {
+  imgPromise,
+  initShaders,
+  getMousePosInWebgl,
+  glToCssPos,
+  glToCanvasPos,
+  ScaleLinear,
+  SinFn,
+  GetIndexInGrid,
+  parseColorStops
+};
